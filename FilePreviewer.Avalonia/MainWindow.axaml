@@ -1,0 +1,19 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="using:FilePreviewer.Avalonia.Views"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="FilePreviewer.Avalonia.MainWindow"
+        Title="FilePreviewer.Avalonia">
+    <DockPanel>
+        <StackPanel Orientation="Horizontal" Spacing="10" DockPanel.Dock="Top" Margin="10">
+            <ToggleButton x:Name="AlwaysOnTopToggleButton" Content="Pin (Always on Top)"/>
+            <!-- Other global controls could go here -->
+        </StackPanel>
+
+        <Border BorderBrush="Gray" BorderThickness="1" Margin="10" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+            <ContentControl x:Name="MainContentArea" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+        </Border>
+    </DockPanel>
+</Window>

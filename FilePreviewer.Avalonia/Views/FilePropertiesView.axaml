@@ -1,0 +1,41 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:FilePreviewer.Avalonia.ViewModels"
+        mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="300"
+        x:Class="FilePreviewer.Avalonia.Views.FilePropertiesView"
+        Title="File Properties" Width="400" Height="auto" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner">
+    <Design.DataContext>
+        <!-- Enable IntelliSense and design-time data -->
+        <vm:FilePropertiesViewModel/>
+    </Design.DataContext>
+    <Panel Margin="15">
+        <TextBlock Text="Loading file properties..."
+                   IsVisible="{Binding IsLoading}"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   FontSize="16"/>
+
+        <StackPanel Spacing="5" IsVisible="{Binding !IsLoading}"> <!-- Alternative: IsVisible="{Binding IsNotLoading}" if IsNotLoading property is preferred -->
+            <TextBlock Text="File Name:" FontWeight="SemiBold"/>
+            <TextBlock Text="{Binding FileName}" Margin="0,0,0,5"/>
+
+            <TextBlock Text="Full Path:" FontWeight="SemiBold"/>
+            <TextBlock Text="{Binding FilePath}" TextWrapping="Wrap" Margin="0,0,0,5"/>
+
+            <TextBlock Text="Size:" FontWeight="SemiBold"/>
+            <TextBlock Text="{Binding FileSize}" Margin="0,0,0,5"/>
+
+            <TextBlock Text="Created (UTC):" FontWeight="SemiBold"/>
+            <TextBlock Text="{Binding CreationTime}" Margin="0,0,0,5"/>
+
+            <TextBlock Text="Modified (UTC):" FontWeight="SemiBold"/>
+            <TextBlock Text="{Binding LastModifiedTime}" Margin="0,0,0,5"/>
+
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" IsVisible="{Binding HasErrorMessage}" TextWrapping="Wrap" Margin="0,5,0,5" FontWeight="Bold"/>
+
+            <Button Content="OK" Click="OkButton_Click" HorizontalAlignment="Center" Width="100" Margin="0,15,0,0" IsEnabled="{Binding IsNotLoading}"/>
+        </StackPanel>
+    </Panel>
+</Window>
