@@ -15,4 +15,5 @@
             <ContentControl x:Name="MainContentArea" />
         </Border>
     </StackPanel>
+
 </Window>

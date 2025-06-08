@@ -1,150 +1,186 @@
 using Avalonia.Controls;
-using Avalonia.Interactivity; // Required for RoutedEventArgs
-using FilePreviewer.Avalonia.Views; // Required for ImageDisplayView
-using System.IO; // Required for Path
-using System; // Required for AppContext
-using Avalonia.Layout; // Required for HorizontalAlignment/VerticalAlignment
-using Avalonia.Media; // Required for TextWrapping
+using Avalonia.Interactivity;
+using Avalonia.Layout;
+using Avalonia.Media;
+using FilePreviewer.Avalonia.Core; // Required for FileTypeDetector
+using FilePreviewer.Avalonia.Views;
+using FilePreviewer.Avalonia.WindowsIntegration; // Required for SpacebarHook
+using System;
+using System.IO;
+using System.Threading.Tasks;
+using Avalonia.Controls.Primitives; // Required for ToggleButton
 
 namespace FilePreviewer.Avalonia
 {
     public partial class MainWindow : Window
     {
-        private Button? _testLoadImageButton;
-        private Button? _testShowPropertiesButton; // Added
+        private ToggleButton? _alwaysOnTopToggleButton;
+
+    
         private ContentControl? _mainContentArea;
 
         public MainWindow()
         {
-            InitializeComponent(); // This method is auto-generated and calls FindControls if needed by source gen
-                                   // For explicit control finding, it's better to do it after InitializeComponent
+            InitializeComponent();
             InitializeCustomControls();
+            SetupSpacebarHook(); // Placeholder for spacebar hook integration
+            SetInitialContentMessage(); // Set initial message in MainContentArea
+            this.Closing += MainWindow_Closing; // Handle window closing for cleanup
         }
 
         private void InitializeCustomControls()
         {
-            // Find the controls by their names from the AXAML
-            _testLoadImageButton = this.FindControl<Button>("TestLoadImageButton");
-            _testShowPropertiesButton = this.FindControl<Button>("TestShowPropertiesButton"); // Added
+            _alwaysOnTopToggleButton = this.FindControl<ToggleButton>("AlwaysOnTopToggleButton");
             _mainContentArea = this.FindControl<ContentControl>("MainContentArea");
 
-            if (_testLoadImageButton != null)
+            if (_alwaysOnTopToggleButton != null)
             {
-                _testLoadImageButton.Click += TestLoadImageButton_Click;
+                _alwaysOnTopToggleButton.IsCheckedChanged += AlwaysOnTopToggleButton_IsCheckedChanged;
+                _alwaysOnTopToggleButton.IsChecked = this.Topmost;
             }
             else
             {
-                Console.WriteLine("MainWindow: TestLoadImageButton control not found. Check AXAML x:Name.");
-                // Display an error in the window if critical controls are missing
-                this.Content = new TextBlock { Text = "Error: TestLoadImageButton not found during initialization.", Margin = new Avalonia.Thickness(10) };
-            }
-
-            if (_testShowPropertiesButton != null) // Added
-            {
-                _testShowPropertiesButton.Click += TestShowPropertiesButton_Click; // Added
-            }
-            else // Added
-            {
-                Console.WriteLine("MainWindow: TestShowPropertiesButton control not found. Check AXAML x:Name."); // Added
-                // Optionally, display an error if this button is critical, though less so than the content area
+                Console.WriteLine("MainWindow: AlwaysOnTopToggleButton control not found.");
             }
 
             if (_mainContentArea == null)
             {
-                Console.WriteLine("MainWindow: MainContentArea control not found. Check AXAML x:Name.");
-                // If _testLoadImageButton was found, this part of UI might still be usable to show the error
-                if (this.Content is not TextBlock) // Avoid overwriting previous error
-                {
-                     this.Content = new TextBlock { Text = "Error: MainContentArea not found during initialization.", Margin = new Avalonia.Thickness(10) };
-                }
+                Console.WriteLine("MainWindow: MainContentArea control not found. Cannot display content.");
+                // Fallback if main content area is somehow missing
+                this.Content = new TextBlock { Text = "Error: MainContentArea not found. UI cannot load.", Margin = new Avalonia.Thickness(10) };
             }
         }
 
-        private async void TestLoadImageButton_Click(object? sender, RoutedEventArgs e)
+        private void SetInitialContentMessage()
+        {
+            if (_mainContentArea != null)
+            {
+                _mainContentArea.Content = new TextBlock
+                {
+                    Text = "Select a file in Explorer and press Spacebar to preview.\n(Note: Spacebar hook not yet implemented.)",
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    TextWrapping = TextWrapping.Wrap,
+                    Margin = new Avalonia.Thickness(20)
+                };
+            }
+        }
+
+        public async Task ProcessFileAsync(string filePath)
         {
             if (_mainContentArea == null)
             {
-                Console.WriteLine("MainWindow: MainContentArea is null, cannot load image view.");
-                // Display this message in the UI as well if possible
-                var errorTextBlock = new TextBlock
-                {
-                    Text = "Critical Error: MainContentArea reference is null. Cannot display content.",
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    VerticalAlignment = VerticalAlignment.Center,
-                    TextWrapping = TextWrapping.Wrap
-                };
-                // If the _mainContentArea itself is null, we might need to set the window's content directly
-                this.Content = errorTextBlock;
+                Console.WriteLine("MainWindow: MainContentArea is null. Cannot process file.");
                 return;
             }
 
-            var imageView = new ImageDisplayView();
-            _mainContentArea.Content = imageView;
-
-            // The dummy PNG was created at 'FilePreviewer.Avalonia/test.png'.
-            // When running from the project directory (e.g. /app/FilePreviewer.Avalonia),
-            // a relative path should work.
-            string imagePath = "test.png";
-
-            // Absolute path for checking, in case relative path fails due to working directory issues.
-            string absoluteImagePath = Path.GetFullPath(imagePath);
-
-            if (!File.Exists(imagePath)) // Check relative path first
+            // Clear previous content except for dialogs
+            if (!(_mainContentArea.Content is Window)) // Don't clear if a dialog is somehow in content
             {
-                if (!File.Exists(absoluteImagePath)) // Then check absolute path
-                {
-                    string errorMessage = $"Test image not found. \nRelative path checked: '{imagePath}' \nAbsolute path checked: '{absoluteImagePath}'. \nEnsure 'test.png' is in the project root directory ('FilePreviewer.Avalonia') and the application's working directory is set correctly, or that the file is copied to the output folder.";
-                    Console.WriteLine(errorMessage);
-                    var textBlock = new TextBlock
-                    {
-                        Text = errorMessage,
-                        TextWrapping = TextWrapping.Wrap,
-                        Margin = new Avalonia.Thickness(10)
-                    };
-                    _mainContentArea.Content = textBlock;
-                    return;
-                }
-                // If absolute path exists, use it (means working directory was not the project root)
-                imagePath = absoluteImagePath;
+                _mainContentArea.Content = null;
             }
 
-            await imageView.LoadImageAsync(imagePath);
-        }
-
-        private async void TestShowPropertiesButton_Click(object? sender, RoutedEventArgs e) // Added method
-        {
-            string filePath = "test.bin"; // Use the dummy binary file
-            string absoluteFilePath = Path.GetFullPath(filePath);
-
+            if (string.IsNullOrEmpty(filePath))
+            {
+                _mainContentArea.Content = new TextBlock { Text = "Error: No file path provided.", Foreground = Brushes.Red };
+                return;
+            }
             if (!File.Exists(filePath))
             {
-                if (!File.Exists(absoluteFilePath))
-                {
-                    string errorMessage = $"Test file not found for properties window. \nRelative path checked: '{filePath}' \nAbsolute path checked: '{absoluteFilePath}'. \nEnsure 'test.bin' is in the project root directory ('FilePreviewer.Avalonia') and accessible.";
-                    Console.WriteLine(errorMessage);
-                    if (_mainContentArea != null)
-                    {
-                        _mainContentArea.Content = new TextBlock
-                        {
-                            Text = errorMessage,
-                            TextWrapping = TextWrapping.Wrap,
-                            Margin = new Avalonia.Thickness(10)
-                        };
-                    }
-                    else
-                    {
-                        this.Content = new TextBlock { Text = errorMessage, TextWrapping = TextWrapping.Wrap, Margin = new Avalonia.Thickness(10) };
-                    }
-                    return;
-                }
-                filePath = absoluteFilePath;
+                _mainContentArea.Content = new TextBlock { Text = $"Error: File not found at '{filePath}'.", Foreground = Brushes.Red, TextWrapping = TextWrapping.Wrap };
+                return;
             }
 
-            var propertiesWindow = new FilePropertiesView(filePath);
-            // Show the window; since it's a dialog, we might want to show it as such,
-            // but for now, just Show(). If we want to ShowDialog, it needs a parent window.
-            // propertiesWindow.Show();
-            await propertiesWindow.ShowDialog(this); // Show as a dialog ancentered on this MainWindow
+            try
+            {
+                FileTypeDetector.FileType fileType = await FileTypeDetector.GetFileTypeAsync(filePath);
+
+                switch (fileType)
+                {
+                    case FileTypeDetector.FileType.Image:
+                        var imageView = new ImageDisplayView();
+                        _mainContentArea.Content = imageView;
+                        await imageView.LoadImageAsync(filePath);
+                        break;
+
+                    case FileTypeDetector.FileType.Text:
+                        var textView = new TextDisplayView();
+                        _mainContentArea.Content = textView;
+                        await textView.LoadTextAsync(filePath);
+                        break;
+
+                    case FileTypeDetector.FileType.Binary:
+                        // For binary files, we show a dialog, so we don't replace MainContentArea directly.
+                        // We might want to show some indication in MainContentArea that a dialog is open, or leave it as is.
+                        _mainContentArea.Content = new TextBlock { Text = $"Displaying properties for binary file: {Path.GetFileName(filePath)}", HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+                        var propertiesWindow = new FilePropertiesView(filePath);
+                        await propertiesWindow.ShowDialog(this);
+                        // After dialog closes, we could revert MainContentArea or leave the message.
+                        // For now, leave the message. If user selects another file, it will update.
+                        break;
+
+                    case FileTypeDetector.FileType.Unknown:
+                    default:
+                        _mainContentArea.Content = new TextBlock { Text = $"Error: Cannot preview file. Unknown or unsupported file type at '{filePath}'.", Foreground = Brushes.Red, TextWrapping = TextWrapping.Wrap };
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error processing file '{filePath}': {ex.Message}");
+                _mainContentArea.Content = new TextBlock { Text = $"An unexpected error occurred while processing '{Path.GetFileName(filePath)}':\n{ex.Message}", Foreground = Brushes.Red, TextWrapping = TextWrapping.Wrap };
+            }
+        }
+
+        private void SetupSpacebarHook()
+        {
+            // Placeholder for actual hook logic
+            try
+            {
+                SpacebarHook.Start(); // This is a static placeholder call
+                SpacebarHook.SpacebarPressedWithFile += OnSpacebarPressedWithFile;
+                Console.WriteLine("MainWindow: SpacebarHook.Start() called and event subscribed (placeholder).");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"MainWindow: Failed to start SpacebarHook (placeholder) - {ex.Message}");
+                if (_mainContentArea != null && _mainContentArea.Content is TextBlock currentTextBlock && currentTextBlock.Text.Contains("Spacebar hook not yet implemented"))
+                {
+                    currentTextBlock.Text += $"\nError initializing hook: {ex.Message}";
+                }
+            }
+        }
+
+        private async void OnSpacebarPressedWithFile(string filePathFromEvent)
+        {
+            Console.WriteLine($"MainWindow: SpacebarPressedWithFile event received for: {filePathFromEvent}");
+            // Bring window to front and focus before processing
+            this.Activate();
+            await ProcessFileAsync(filePathFromEvent);
+        }
+
+        private void AlwaysOnTopToggleButton_IsCheckedChanged(object? sender, RoutedEventArgs e)
+        {
+            if (_alwaysOnTopToggleButton != null)
+            {
+                this.Topmost = _alwaysOnTopToggleButton.IsChecked == true;
+            }
+        }
+
+        private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
+        {
+            // Cleanup spacebar hook
+            try
+            {
+                SpacebarHook.SpacebarPressedWithFile -= OnSpacebarPressedWithFile;
+                SpacebarHook.Stop(); // This is a static placeholder call
+                Console.WriteLine("MainWindow: SpacebarHook.Stop() called and event unsubscribed (placeholder).");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"MainWindow: Error stopping SpacebarHook (placeholder) - {ex.Message}");
+            }
+    
         }
     }
 }
