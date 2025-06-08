@@ -15,6 +15,8 @@ namespace FilePreviewer.Avalonia
     public partial class MainWindow : Window
     {
         private ToggleButton? _alwaysOnTopToggleButton;
+
+    
         private ContentControl? _mainContentArea;
 
         public MainWindow()
@@ -23,7 +25,6 @@ namespace FilePreviewer.Avalonia
             InitializeCustomControls();
             SetupSpacebarHook(); // Placeholder for spacebar hook integration
             SetInitialContentMessage(); // Set initial message in MainContentArea
-
             this.Closing += MainWindow_Closing; // Handle window closing for cleanup
         }
 
@@ -179,6 +180,7 @@ namespace FilePreviewer.Avalonia
             {
                 Console.WriteLine($"MainWindow: Error stopping SpacebarHook (placeholder) - {ex.Message}");
             }
+    
         }
     }
 }

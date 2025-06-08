@@ -4,10 +4,12 @@ using FilePreviewer.Avalonia.ViewModels;
 using System.Threading.Tasks; // For Task
 // System.IO and System are already in ViewModel or not directly needed here now
 
+
 namespace FilePreviewer.Avalonia.Views
 {
     public partial class FilePropertiesView : Window
     {
+
         private readonly FilePropertiesViewModel _viewModel;
 
         // Constructor for XAML previewer design-time data
@@ -16,6 +18,7 @@ namespace FilePreviewer.Avalonia.Views
             InitializeComponent();
             _viewModel = new FilePropertiesViewModel(); // Use the default constructor for design data
             DataContext = _viewModel;
+
         }
 
         public FilePropertiesView(string filePath)
@@ -52,6 +55,7 @@ namespace FilePreviewer.Avalonia.Views
 
         // FormatFileSize is now in the ViewModel
         // private string FormatFileSize(long bytes) { ... }
+   
 
         private void OkButton_Click(object? sender, RoutedEventArgs e)
         {
